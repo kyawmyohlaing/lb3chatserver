@@ -70,6 +70,20 @@ ws.on('connection', (ws) => {
           })
           case 'LOGIN':
             login(parsed.data.email, parsed.data.password);
+          case 'SEARCH' :
+            console.log("Searching for", parsed.data);  
+            models.User.find({where: {email: {
+              like: parsed.data
+            }}}, (err2, users) => {
+              if(!err2 && users){
+                ws.send(JSON.stringify({
+                  type: 'GOT_USERS',
+                  data: {
+                    users: users
+                  }
+                }))
+              }
+            })
             default:
               console.log("Nothing to see here.");
       }
