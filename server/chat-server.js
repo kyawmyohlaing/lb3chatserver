@@ -64,12 +64,14 @@ ws.on('connection', (ws) => {
                 email: parsed.data.email
               }, (profileError, profile) => {
 
-              })
+              });
             }
             
-          })
+          });
+          break;
           case 'LOGIN':
             login(parsed.data.email, parsed.data.password);
+            break;
           case 'SEARCH' :
             console.log("Searching for", parsed.data);  
             models.User.find({where: {email: {
@@ -80,10 +82,45 @@ ws.on('connection', (ws) => {
                   type: 'GOT_USERS',
                   data: {
                     users: users
-                  }
-                }))
+                  },
+                }));
               }
-            })
+            });
+            break;
+            case 'FIND_THREAD':
+            models.Thread.findOne({
+              where: {
+                and: [
+                  {users: {like: parsed.data[0]}},
+                  {users: {like: parsed.data[1]}},
+                ],
+              }}, (err, thread) => {
+                if (!err && thread) {
+                  ws.send(JSON.stringify({
+                    type: 'ADD_THREAD',
+                    data: thread,
+                  }));
+                }else{
+                  models.Thread.create({
+                    lastUpdated: new Date(),
+                    users: parsed.data
+                  },(err2, thread) => {
+                    if (!err2 && thread) {
+                      console.log("Client filter", clients.filter(u => thread.users.indexOf(u.id.toString()) > -1));
+                      clients.filter(u => thread.users.indexOf(u.id) > -1).map(client => {
+                        console.log("Client", client);
+                        client.ws.send(JSON.stringify({
+                          type: 'ADD_THREAD',
+                          data: thread,
+                        }));
+                      });
+                      
+                    }
+                  });
+                }
+              });
+            break;
+
             default:
               console.log("Nothing to see here.");
       }
