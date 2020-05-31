@@ -15,13 +15,15 @@
   },
   "User": {
     "dataSource": "db",
-    "relations": [
+    "relations": 
       {
+       "Profile": {
         "type": "hasOne",
-        "model": "Profile",
+        "model": "profile",
         "foreignkey": ""
+        }
       }
-    ]
+    
   },
   "AccessToken": {
     "dataSource": "db",
