@@ -5,7 +5,22 @@ var models = require('./server.js').models;
 const ws = new WebSocket.Server({port: 8080});
 const clients = [];
 
+const printClientCount = () => {
+  console.log('Clients:', clients.length);
+};
+setInterval(printClientCount, 1000);
+
 ws.on('connection', (ws) => {
+  function getInitialThreads(userId) {
+    models.Thread.find({where: {}}, (err, threads) => {
+      if (!err && threads) {
+        ws.send(JSON.stringify({
+          type: 'INITIAL_THREADS',
+          data: threads,
+        }));
+      }
+    });
+  }
   function login(email, pass) {
     console.log('EM', email, pass);
     models.User.login({email: email, password: pass}, (err, result) => {
@@ -23,6 +38,7 @@ ws.on('connection', (ws) => {
               error: err2,
             }));
           } else {
+            ws.uid = user.id + new Date().getTime().toString();
             const userObject = {
               id: user.id,
               email: user.email,
@@ -31,6 +47,8 @@ ws.on('connection', (ws) => {
 
             clients.push(userObject);
             console.log('Current Client', clients);
+
+            getInitialThreads(user.Id);
 
             ws.send(JSON.stringify({
               type: 'LOGGEDIN',
@@ -44,6 +62,19 @@ ws.on('connection', (ws) => {
       }
     });
   }
+
+  ws.on('close', (req) => {
+    console.log('Request close', req);
+    let clientIndex = -1;
+    clients.map((c, i) => {
+      if (c.ws._closeCode === req) {
+        clientIndex = i;
+      }
+    });
+    if (clientIndex > -1) {
+      clients.splice(clientIndex, 1);
+    }
+  });
 
   ws.on('message', (message) => {
     console.log('Got message', JSON.parse(message));
@@ -72,6 +103,7 @@ ws.on('connection', (ws) => {
         case 'CONNECT_WITH_TOKEN':
           models.User.findById(parsed.data.useerId, (err2, user) => {
             if (!err2 && user) {
+              ws.uid = user.id + new Date().getTime().toString();
               const userObject = {
                 id: user.id,
                 email: user.email,
@@ -80,6 +112,7 @@ ws.on('connection', (ws) => {
 
               clients.push(userObject);
               console.log('Current Client', clients);
+              getInitialThreads(user.Id);
 /*
               ws.send(JSON.stringify({
                 type: 'LOGGEDIN',
