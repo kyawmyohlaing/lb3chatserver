@@ -68,6 +68,29 @@ ws.on('connection', (ws) => {
             }
           });
           break;
+
+        case 'CONNECT_WITH_TOKEN':
+          models.User.findById(parsed.data.useerId, (err2, user) => {
+            if (!err2 && user) {
+              const userObject = {
+                id: user.id,
+                email: user.email,
+                ws: ws,
+              };
+
+              clients.push(userObject);
+              console.log('Current Client', clients);
+/*
+              ws.send(JSON.stringify({
+                type: 'LOGGEDIN',
+                data: {
+                  session: result,
+                  user: user,
+                },
+              })); */
+            }
+          });
+          break;
         case 'LOGIN':
           login(parsed.data.email, parsed.data.password);
           break;
