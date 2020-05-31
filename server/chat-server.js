@@ -5,14 +5,14 @@ var models = require('./server.js').models;
 const ws = new WebSocket.Server({port: 8080});
 const clients = [];
 
-const printClientCount = () => {
+/* const printClientCount = () => {
   console.log('Clients:', clients.length);
 };
-setInterval(printClientCount, 1000);
+setInterval(printClientCount, 1000); */
 
 ws.on('connection', (ws) => {
   function getInitialThreads(userId) {
-    models.Thread.find({where: {}}, (err, threads) => {
+    models.Thread.find({where: {}, include: 'Messages'}, (err, threads) => {
       if (!err && threads) {
         ws.send(JSON.stringify({
           type: 'INITIAL_THREADS',
@@ -173,6 +173,25 @@ ws.on('connection', (ws) => {
               });
             }
           });
+          break;
+        case 'THREAD_LOAD':
+          models.Message.find({where: {
+            threadId: parsed.data.threadId,
+          },
+            order: 'date DESC',
+            skip: parsed.data.skip,
+            limit: 10,
+          }, (err2, messages) => {
+            if (!err2 && messages){
+              ws.send(JSON.stringify({
+                type: 'GOT_MESSAGES',
+                threadId: parsed.data.threadId,
+                messages: messages,
+              }));
+            }
+          });
+          break;
+        case 'ADD_MESSAGE':
           break;
         default:
           console.log('Nothing to see here.');

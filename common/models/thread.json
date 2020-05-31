@@ -16,7 +16,13 @@
     }
   },
   "validations": [],
-  "relations": {},
+  "relations": {
+    "Message": {
+      "type": "hasMany",
+      "model": "Message"
+      
+    }
+  },
   "acls": [],
   "methods": {}
 }
