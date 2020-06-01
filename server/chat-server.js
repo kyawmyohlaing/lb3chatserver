@@ -192,6 +192,21 @@ ws.on('connection', (ws) => {
           });
           break;
         case 'ADD_MESSAGE':
+          models.Thread.findById(parsed.threadId, (err2, thread) => {
+            if (!err2 && thread) {
+              models.Message.upsert(parsed.message, (err3, message) => {
+                if (!err3 && message) {
+                  clients.filter(client => thread.users.indexOf(client.id) > -1).map(client => {
+                    client.ws.send(JSON.stringify({
+                      type: 'ADD_MESSAGE_TO_THREAD',
+                      threadId: parsed.threadId,
+                      message: message,
+                    }));
+                  });
+                }
+              });
+            }
+          });
           break;
         default:
           console.log('Nothing to see here.');
